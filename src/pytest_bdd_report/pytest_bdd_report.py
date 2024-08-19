@@ -7,8 +7,10 @@ from pytest_bdd_report.summary.summary_generator import SummaryGenerator
 import os
 
 BDD_REPORT_FLAG = "--bdd-report"
-CUCUMBER_JSON_PATH = ".cucumber-data.json"
 
+# the default path for the cucumber-json file
+# (it will be used if session.config.option.cucumber_json_path is not set)
+DEFAULT_CUCUMBER_JSON_PATH = ".cucumber-data.json"
 
 # Command-line option setup
 def pytest_addoption(parser):
@@ -36,10 +38,14 @@ def pytest_configure(config):
     """
     Configure the generation of the cucumber-json file
     """
-    if _get_flag_option(config, BDD_REPORT_FLAG) != ".html":
-        config.option.cucumber_json_path = CUCUMBER_JSON_PATH
-
-
+    # if the flag option is not set, do nothing
+    if _get_flag_option(config, BDD_REPORT_FLAG) == ".html":
+        return
+    
+    # Set the cucumber-json path with a default value if not already set
+    if not config.option.cucumber_json_path:
+        config.option.cucumber_json_path = DEFAULT_CUCUMBER_JSON_PATH
+        
 test_file_uri = []
 
 
@@ -69,7 +75,7 @@ def pytest_sessionfinish(session):
     if report_file_path != ".html":
         report_name = os.path.basename(report_file_path)
         report_generator = ReportComposer(
-            loader=JsonLoader(CUCUMBER_JSON_PATH),
+            loader=JsonLoader(session.config.option.cucumber_json_path),
             report_builder=ReportBuilder(report_name),
         )
         report = report_generator.create_report()
